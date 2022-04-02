@@ -1,0 +1,60 @@
+---
+title: "Introduction to Data Visualization in R Using ggplot2"
+output: html_notebook
+---
+
+# Grammer of Graphics
+
+1. Data - actual data used
+2. Geoms - short for geometries - describe the shapes that represent our data. Whether it be dots on a scatter plot, bar charts on the graph, or a line to the plot of data
+3. Aesthetics - visual atriibutes of the plot, including the scales on the axes, the color, the fill, and other attributes concerning appearance
+
+
+```{r message=FALSE, warning=FALSE}
+# load libraries and data
+setwd("d:/Data_Scientist/Become_Data_Scientist/R/r_studynotes")
+library(readr)
+library(dplyr)
+library(ggplot2)
+movies <- read_csv("movies.csv")
+```
+
+```{r}
+# Observe layers being added with the + sign
+viz <- ggplot(data=movies, aes(x=imdbRating, y=nrOfWins)) +
+       geom_point(aes(color=nrOfGenre), alpha=0.5) + 
+       labs(title="Movie Ratings Vs Award Wins", subtitle="From IMDB dataset", y="Number of Award Wins", x="Move Rating", color = "Number of Genre")
+
+
+# Prints the plot
+viz
+```
+
+## Bound the Data
+``` {r}
+
+viz = ggplot(data=movies) # bound the dataset
+
+viz
+```
+
+## Add aesthetic
+
+``` {r}
+viz = ggplot(data=movies, aes(x=imdbRating, y=nrOfWins)) # bound the dataset
+```
+
+## Add Geoms
+
+Create scatter plot ```+ geom_point()```
+Create a better visually clear parttern ```+ geom_smooth```
+
+**Note** the function ```ggplot()``` is closed with data and aesthetics, geoms are the extra layers like ```ggploy() + geom_point()```
+
+``` {r}
+viz <- ggplot(data=movies, aes(x=imdbRating, y=nrOfWins)) + geom_point() # Create scatter point with geom_point() layer
+
+
+viz
+
+```

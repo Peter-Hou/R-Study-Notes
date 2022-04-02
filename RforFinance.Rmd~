@@ -1,0 +1,11 @@
+---
+title: "R Asset Evaluation"
+author: ""
+date: "06/05/2020"
+output:
+  pdf_document: 
+    fig_caption: yes
+    number_sections: yeswe
+    latex_engine: xelatex
+  html_document: default
+---

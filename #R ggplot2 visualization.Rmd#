@@ -1,0 +1,25 @@
+---
+title: "R ggplot2 Data Visualization"
+author: "Peter Hou"
+date: "08/01/2022
+output:
+  pdf_document: default
+  html_document: default
+---
+
+``` {r}
+library(ggplot2)
+```
+
+# Some cool packages
+## plot designer for absolute beginner
+``` {r}
+install.packages("esquisse")
+
+library(esquisse)
+
+esquisse::esquisser()
+
+```
+
+

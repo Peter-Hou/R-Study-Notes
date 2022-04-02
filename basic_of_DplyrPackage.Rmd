@@ -1,0 +1,160 @@
+---
+title: "Basics of Dplyr Package in R"
+output: html_notebook
+---
+
+```{r message=FALSE, warning=FALSE}
+# load libraries
+library(readr)
+library(dplyr)
+```
+
+```{r}
+# load data frame
+artists <- read.csv("artists1.csv")
+artists
+```
+
+## Piping
+
+One of the features in dplyr package is the %>% pipe function
+
+``` {r}
+artists %>% head()
+
+                                        # the two function are equivalent
+head(artists)
+```
+## Colume selection
+
+Through using select(df, col1, col2, ..) function, you'll be able to pick the columns you want to include in a df.
+We may use %>% to simplify the readability, 
+	```
+	df %>% select(col1, col2, ...)
+	```
+
+```{r}
+# select one column
+
+artist_groups = artists %>%  select(group)
+
+
+```
+
+```{r}
+# select multiple columns
+
+group_info = artists %>% select(group, spotify_monthly_listeners, year_founded)
+
+```
+
+To exclude columns, we use ``` df %>% select(-col1, -col2, ..) ```
+
+``` {r}
+# select all columns except a set
+
+no_albums = artists %>% select(-albums)
+
+df_cols_removed = artists %>% select(-genre, -spotify_monthly_listeners, -year_founded)
+```
+
+## Filtering Rows with Logic
+
+Through filter function and comparison operators, you'll be able to obatin rows you desire. ```df %>% filter(cond1, cond2, ...)``` 
+only returning the rows satisfy con1 **and** cond2,
+
+	In this case, and is represented by ",", or is "|", not is "!"
+
+
+```{r}
+rock_groups = artists %>% filter(genre == "Rock")
+rock_groups
+
+popular_rock_groups <- artists %>% filter(genre == "Rock", spotify_monthly_listeners > 20000000)
+popular_rock_groups
+
+
+korea_or_before_2000 <- artists %>% filter(country == "South Korea" | year_founded <= 2000)
+
+not_rock_groups <- artists %>% filter(!(genre == "Rock"))
+```
+
+## Arranging Rows
+
+Sorting the rows in ascending order by the column provided as an argument ``` df %>% arrange(col) ```
+	For numeric cols, ascending - 1-9
+	For character, ascending - A - Z
+For descending, ```df %>% arrange(desc(col))```
+
+``` {r}
+
+group_asc <- artists %>% arrange(group)
+group_asc
+
+youtube_desc <- artists %>% arrange(desc(youtube_subscribers))
+
+```
+
+## Adding a Column
+
+You may add a new column to the dataset by ```mutate()``` function. You can directly perform arithmetic operation on other columns to get a new column
+
+```{r}
+
+# load new data
+
+dogs <- read_csv("dogs.csv")
+head(dogs)
+
+names(dogs)
+
+# add one column
+dogs <- dogs %>% mutate(avg_height = (height_low_inches + height_high_inches)/2)
+
+
+# add multiple column
+
+dogs <- dogs %>% mutate(avg_weight = (weight_low_lbs + weight_high_lbs)/2)
+
+dogs <- dogs %>% mutate(rank_change_13_to_16 = rank_2016-rank_2013)
+
+```
+
+## Transmute Columns
+
+function is used for only returning a dataframe with the new created columns ```transmute()```
+
+``` {r}
+dogs <- dogs %>%
+  transmute(breed = breed,
+            avg_height = (height_low_inches + height_high_inches)/2,
+         avg_weight = (weight_low_lbs + weight_high_lbs)/2,
+        rank_change_13_to_16 = rank_2016 - rank_2013)
+
+dogs
+
+```
+
+## Rename Columns
+
+Use the function```rename(newname = oldname, ...)```, it enables to rename any cols name, be careful that the old name the variable gets the value.
+
+```{r}
+
+original_col_names <- names(dogs)
+
+original_col_names
+
+dogs <- dogs %>% rename(avg_height_inches = avg_height, avg_weight_lbs = avg_weight,
+                        popularity_change_13_to_16 = rank_change_13_to_16)
+
+dogs
+
+
+
+
+```
+
+
+
+

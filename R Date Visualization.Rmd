@@ -1,0 +1,553 @@
+---
+title: "R Data Visualization"
+author: "Peter Hou"
+date: "08/01/2022
+output:
+  pdf_document: 
+    fig_caption: yes
+    number_sections: yes
+    latex_engine: xelatex
+  html_document: default
+---
+
+# More Functions
+
+## `R` Apply Functions
+
+### `apply()` Function
+
+General Syntax
+```
+apply(2d_something, row_or_column?[required], what_function?, add_para...)
+```
+`apply` function is amazing at applying a function directly to each row (`1`) or column (`2`) and return a vector, list, or matrix.
+`2d-something` can be a vector or a matrix (same data type).
+
+```{r}
+test_mat <- matrix(1:4, nrow = 2)
+apply(test_mat, c(1,2), function(x){1/x}) ## apply to all entries
+apply(test_mat, 2, sum)
+
+test_mat2 <- matrix(1:10, nrow = 5, ncol = 6)
+apply(test_mat2, 2, sum)
+```
+
+### Practice Question 1
+Try to write a code chunk so that it can output a vector of sum of column
+sums of a matrix test_mat.
+
+``` {r}
+apply(test_mat, 2, sum)
+```
+
+### `lapply()` Function
+
+General Syntax
+```
+lapply(2d_something, what_function?, add_para...)
+```
+This will return a list but what orientation, you might wonder.
+
+```{r}
+lapply(test_mat, sum) ## display the list
+```
+We can see that the order is going **by column**!
+
+
+### `sapply()` Function
+
+General Syntax 
+```
+sapply(2d_something, what_function?, add_para...)
+```
+Similar to `lapply`, but output depends on `2d_something`. 
+
+### `mapply()` Function
+
+General Syntax
+```
+mapply(what_function, 2d_something, add_para...)
+```
+This returns a vector or a matrix.
+
+```{r}
+mapply(rep, 1:5, 5) 
+```
+
+### `tapply()` Function
+
+General Syntax
+```
+tapply(one_column, group_column, what_function?, add_para...)
+```
+
+This is useful when you want to apply a function to a column by groups. The output will be a table with group names in `group_column` as column names.
+
+```{r eval=FALSE, include=FALSE}
+tapply(dota2Data$`Ember Spirit`, dota2Data$game_mode,
+       function(x){sum(abs(x))})
+```
+
+Let's summarize what we have seen!
+
+| Function                                     | Usage                                                                                     | Input                            | Output                           |
+|----------------------------------------------|-------------------------------------------------------------------------------------------|----------------------------------|----------------------------------|
+| apply(2d_something, row_or_col, fun)         | Apply a function to a 2d <br>data type by row or by column                                | vector, list, matrix, data frame | vector, list, matrix, data frame |
+| lapply(2d_something, fun)                    | Apply a function to all elements<br>of the 2d data type                                   | vector, list, matrix, data frame | list                             |
+| sapply(2d_something, fun)                    | Apply a function to all elements<br>of the 2d data type                                   | vector, list, matrix, data frame | vector, list, matrix, data frame |
+| mapply(fun, 2d_something)                    | Apply a function to all elements<br>of the 2d data type                                   | vector, list, matrix, data frame | matrix                           |
+| tapply(one_col, group_col, fun)              | Apply a function to a column of<br>data and summarize them by groups<br>of another column | data frame, matrix               | table                            |
+
+
+# Data Manipulation: COVID-19 Report
+
+Import necessary library
+``` {r}
+library(readr)
+
+```
+
+Import necessary datasets
+
+``` {r}
+confirmedDF <- read.csv("time_series_covid19_confirmed_global.csv")
+deathDF <- read.csv("time_series_covid19_deaths_global.csv")
+curedDF <- read.csv("time_series_covid19_recovered_global.csv")
+```
+
+## Data Checking
+
+``` {r}
+head(confirmedDF[, 1:5], 2)
+```
+
+## Country Data Snapshot
+We want to write a function which consolidate info on confirmed, death, and recovered cases for a particular region.
+We use China as an example
+
+``` {r}
+country <- "China"
+
+confirmedDF_country <-
+    confirmedDF[which(confirmedDF$Country.Region==country),]
+deathDF_country <-
+    deathDF[which(deathDF$Country.Region==country),]
+curedDF_country <-
+    curedDF[which(curedDF$Country.Region==country),]
+```
+
+### aggregate() Function
+ `aggregate(data_columns_to_aggregate, by = group_column, FUN = function_to_use)`
+``` {r} 
+str(confirmedDF_country)
+
+confirmedDF_country$Country.Regin <- as.character(confimedDF_country$Country.Regin) ## Makes sure that the country region name is of character type for the following function to proceed.
+
+confirmedDF_country_agg <-
+       aggregate(confirmedDF_country[, 3:ncol(confirmedDF_country)], ## column 3-end are the statistics for COVID-19
+                 list(country = confirmedDF_country$Country.Region), sum)
+
+confirmedDF_country_agg ## You now should see we have consolidate infor for a country's COVID cases on specific days instead of scatter through all the provinces and states in a country
+```
+
+We now put the above consolidation into a function
+
+``` {r}
+clean_for_consolidate <- function(DF_country) {
+    DF_country$Country.Region <- as.character(DF_country$Country.Region)  
+
+DF_country_agg <-
+       aggregate(DF_country[,3:ncol(DF_country)], ## column 3-end are the statistics for COVID-19 cases on specific days
+                 list(country = DF_country$Country.Region), sum)
+}
+
+clean_for_consolidate(confirmedDF_country)
+```
+
+Consolidation for any country
+
+``` {r}
+country_consolidate <- function(country) {
+confirmedDF_country <-
+    confirmedDF[which(confirmedDF$Country.Region==country),]
+deathDF_country <-
+    deathDF[which(deathDF$Country.Region==country),]
+curedDF_country <-
+    curedDF[which(curedDF$Country.Region==country),]
+
+df_list <- list (
+    confirm = confirmedDF_country,
+    death = deathDF_country,
+    cured = curedDF_country
+)
+
+agg_df_list <- lapply(df_list, clean_for_consolidate)
+
+agg_df_list$confirm <- cbind(Type = "Confirmed", within(agg_df_list$confirm, rm("Lat", "Long")))
+agg_df_list$death <- cbind(Type = "Death", within(agg_df_list$death, rm("Lat", "Long")))
+agg_df_list$cured <- cbind(Type = "Cured", within(agg_df_list$cured, rm("Lat", "Long")))
+
+consolidate_df <- rbind(agg_df_list$confirm,
+                        agg_df_list$death,
+                        agg_df_list$cured)
+
+return(consolidate_df)
+                     
+}   
+
+
+china_consolidate <- country_consolidate("China")
+china_consolidate
+```
+
+# Data Visualization in R Default
+
+## Plot Function
+
+`plot` function itself can be used to generate all coordinate based 2D graphs, including scatter plots, line charts, and function plots.
+
+**plot() used mainly for discrete data plotting**
+
+General Syntax
+```
+plot(x, y,
+     type = ,
+     pch  = ,
+     col  = ,
+     main = , xlab = , ylab = , 
+     lty  = , lwd  = ,
+     xlim = c(left_bound, right_bound),
+     ylim = c(left_bound, right_bound))
+```
+
+- `x`: usually defined using a vector or `seq(from = , to = , by = )`
+- `y`: another vector, or function output of `x_coord`
+- `type`: dafault is scatter plot, "l" for line chart, "o" for line-point chart
+- `pch`: point shape, [different index](http://www.sthda.com/english/wiki/r-plot-pch-symbols-the-different-point-shapes-available-in-r)
+- `col`: colour!!! Not column!!!
+- `main`: title of the plot
+- `xlab,ylab`: x axis label and y axis label
+- `lty`: line type, default is solid
+- `lwd`: line width, how thick your line is
+
+``` {r}
+x_seq <- seq(from = -2, to = 2, by = 0.001)
+plot(x_seq, x_seq^2, type = "o", main = "Plot for f(x) = x^2",
+     xlab = "x", ylab = "f(x)", pch = 13, lty = 3, lwd = 4, col = "red")
+
+```
+### Overlay Points/Lines
+
+Given that you have a plot already
+
+- we can use `points()` Function, adding a layer of scatter points to the original plot object
+
+```{r}
+rand_norm_vec_x <- rnorm(100, 0, 1)
+rand_norm_vec_y <- rnorm(100, 0, 1)
+plot(x_seq, x_seq^2, type = "o", main = "Plot for f(x) = x^2",
+     xlab = "x", ylab = "f(x) = x^2", pch = 13,
+     lty = 3, lwd = 4, col = "red",
+     xlim = c(-2, 2),
+     ylim = c(-2, 2))
+points(rand_norm_vec_x, rand_norm_vec_y, pch = 19, col = 'blue')
+```
+
+- We can also use `lines()` Function
+
+```{r}
+plot(x_seq, x_seq^2, type = "o", main = "Plot for f(x) = x^2",
+     xlab = "x", ylab = "f(x) = x^2", pch = 13,
+     lty = 3, lwd = 4, col = "red",
+     xlim = c(-2, 2),
+     ylim = c(-2, 2))
+
+lines(x_seq, 1-x_seq^3, lty=2, col="green")
+```
+
+- Use `legend(x, y, col = , legend = , pch =, lty =)` to better distinguish
+``` {r}
+x_seq <- seq(from = 0, to = 2, by = 0.1)
+plot(x_seq, x_seq^2, col = "black", type = "o", pch = 3, lty = 1, xlim = c(0, 2))
+lines(x_seq, x_seq^4, col = "red", type = "o",
+     pch = 13, lty = 2)
+points(x_seq, x_seq, col = "blue",
+       pch = 16, lty = 3)
+legend("bottomright", col = c("black", "red", "blue"),
+       legend = c("First", "Second", "Third"),
+       pch = c(3, 13, 16), lty = c(1, 2, 3))
+```
+
+## Other Graph Functions with Frame
+
+### `curve()` Function
+This is used to graph **continuous** functions directly
+
+
+
+``` {r}
+curve(pnorm(x, 1, 2), col = 'red',
+      ylab = 'Cumulative Density Function',
+      main = 'cdf of N(1,4)',
+      xlim = c(-3, 5))
+points(0, 0.8, pch = 6, col = 'blue')
+```
+Special note on how x is used to represent a set of points.
+
+
+## Practice Question
+Write a code chunk that plot all the monomial from degree 1 to 5 over
+domain 0 to 4. Distinguish them by colour and line type in a single graph
+frame.
+``` {r}
+
+x_seq <- seq(from = 0, to = 4, by = 0.1)
+graph_monomial <- function(degree) {
+    if (degree == 1) {
+        plot(x_seq, x_seq ^ degree, main = "Monomials", ylab = "function_value",
+             xlab = "x", type = "l")
+    }
+    else {
+        lines(x_seq, x_seq ^ degree, lty = sample(1:1000, 1), col = sample(1:1000, 1))
+        }
+}
+apply(matrix(1:5), c(1, 2), graph_monomial)
+```
+### Hist() Function
+
+Histogram is also known as frequency chart
+
+``` {r}
+rand_exp_vec <- rexp(1000, 0.5)
+hist(rand_exp_vec, main = "Histogram of Exp(2) Data",
+     xlab = "Data", ylab = "Frequency",
+     col = "skyblue",
+     border = "red")
+curve(300 * dexp(x, 0.5), col = "purple", add = TRUE) ## "add = TRUE" to overlay
+```
+
+## How to Customize Graph Output
+
+### `par()` Function
+
+A powerful too:
+
+1. It allows you to have different plots in a single graph output
+
+``` {r}
+
+par(mfrow = c(2, 2)) ## 2 x 2 graph layout
+apply(matrix(1:16, nrow = 4), 1, hist)
+```
+2. To change character size
+
+``` {r}
+par(mfrow = c(1,2))
+hist(rand_exp_vec, main = "Default cex",
+     xlab = "Data", ylab = "Frequency",
+     col = "skyblue",
+     border = "red")
+
+par(cex = 0.6) ## This is a scale factor
+hist(rand_exp_vec, main = "cex = 0.6",
+     xlab = "Data", ylab = "Frequency",
+     col = "skyblue",
+     border = "red")
+```
+
+3. Change Graph Margin
+
+General Syntax
+```
+par(mar = c(bottom, left, top, right))
+## Default is c(5.1, 4.1, 4.1, 2.1)
+
+```
+
+```{r}
+
+par(mfrow = c(1,2))
+plot(rand_norm_vec_x, rand_norm_vec_y, main = "Default")
+par(mar = c(2,2,1,0.5))
+plot(rand_norm_vec_x, rand_norm_vec_y, main = "mar = c(2,2,1,0.5)")
+```
+
+4.  How to change axis and label distance
+
+General Syntax
+```
+par(mgp = c(title, labels, tick-line))
+## Default is c(3,1,0)
+```
+
+```{r}
+func <- function(x){x^2+x-1}
+
+par(mfrow = c(1,2))
+
+curve(func(x), main = "Default", 
+      ylab = "Function Value")
+
+par(mgp = c(1.5,0.5, 0.2))
+curve(func(x), main = "mgp = c(1.5,0.5,0.2)", 
+      ylab = "Function Value")
+```
+
+**There are many more small parameters that you can twist. Try to look them up using `? par` command**
+
+## Practice Question
+
+Given any data.frame with numerical columns. Write a function that plot a 
+n ¡Á n graph frame with histograms of each column on the diagonal and
+scatter plots on non-diagonal positions.
+
+``` {r}
+df.plot <- function(df) {
+          dimension <- ncol(df)
+		  colnames <- colnames(df)
+		  par(mfrow = c(dimension, dimension))
+		  for (coln in 1:dimension) {
+		      for (rown in 1:dimension) {
+			     if (coln == rown) {
+				 hist(df[, coln], xlab = colnames[coln], ylab = "frequency", main = colnames[coln])
+				 }
+				 else {
+				 plot(df[, coln], df[,rown], xlab = colnames[coln], ylab = colnames[rown], main = paste(colnames[coln], " vs ", colnames[rown]))
+				 }
+				 
+			  }
+		  }
+
+
+}
+df.plot(data.frame(t(china_consolidate[, 3:ncol(china_consolidate)])))
+```
+
+# Data Visualization in R ggplot2
+
+## Why ggplot2
+1. more modern, more cleaner syntax
+2. static graphics
+3. everything you want in 2D is covered in ggplot2
+4. For 3D, it is recommended to learn plotly package
+
+ggplot2 is a subpackage of **tidyverse**
+
+``` {r}
+library(tidyverse)
+install.packages("tidyverse")
+```
+
+### Addition Notation
+General Syntax
+```
+ggplot(data.frame, aes(x =, y = ,...)) ## Base
+    + geom_different_graph_types       ## Overlay
+```
+
+- Scatter Plot
+
+``` {r}
+
+t_china_consolidate <- t(china_consolidate[,3:ncol(china_consolidate)])
+t_china_consolidate
+
+
+colnames(t_china_consolidate) <- c("Confirmed", "Death", "Cured")
+
+rownames(t_china_consolidate) <- as.Date(rownames(t_china_consolidate), "X%m.%d.%y")
+
+t_china_consolidate <- cbind(Date = as.integer(rownames(t_china_consolidate)), t_china_consolidate)
+
+t_china_consolidate <- data.frame(t_china_consolidate)
+```
+
+``` {r}
+library(ggplot2)
+p1 <-
+    ggplot(t_china_consolidate, aes(x = Date, y = Confirmed)) + geom_point(color = "blue") +
+    geom_point(aes(y = Death), color = "red") + geom_point(aes(y = Cured), color = "green") +
+    ggtitle("China COVID-19 Record")
+
+p1
+
+```
+
+- Line Plot and Ribbon
+
+``` {r}
+p2 <-
+    ggplot(t_china_consolidate,
+           aes(x = Date,
+               y = Confirmed,
+               color = Confirmed)) + geom_line()
+p2 + geom_smooth(method = "loess")
+```
+
+Using a R default data frame
+
+``` {r}
+str(mtcars)
+
+mtcars$carb <- factor(mtcars$carb)
+ggplot(mtcars, aes(x = wt, y = hp, color = cyl, size = mpg, shape = carb)) + geom_point()
+```
+
+- Histogram
+``` {r}
+ggplot(t_china_consolidate, aes(x = Confirmed)) + geom_histogram(binwidth = 20000)
+```
+
+- Correlation Matrix / Plot
+
+``` {r}
+library(corrplot)
+install.packages("corrplot")
+```
+
+``` {r}
+mtcars$carb <- as.numeric(mtcars$carb)
+corr_mat <- cor(mtcars)
+corr_mat[1:3, 1:3]
+
+par(cex = 0.8)
+corrplot(corr_mat, method = "color", addCoef.col = "white")
+```
+
+
+
+## Practice writing the country_consolidate function in one run
+
+``` {r}
+confirmedDF <- read.csv("time_series_covid19_confirmed_global.csv")
+deathDF <- read.csv("time_series_covid19_deaths_global.csv")
+curedDF <- read.csv("time_series_covid19_recovered_global.csv")
+
+clean_for_consolidate <- function(DF_country) {
+    DF_country$Country.Region <- as.character(DF_country$Country.Region)
+
+    DF_country_agg <- aggregate(DF_country[, 3:ncol(DF_country)], list(country = DF_country$Country.Region), sum)
+}
+
+country_consolidate <- function(country) {
+    confirmedDF_country <- confirmedDF[which(confirmedDF$Country.Region == country), ]
+    deathDF_country <- deathDF[which(deathDF$Country.Region == country), ]
+    curedDF_country <- deathDF[which(deathDF$Country.Region == country), ]
+
+    df_list <- list(
+        confirmed = confirmedDF_country,
+        death = deathDF_country,
+        cured = curedDF_country
+    )
+
+    df_list <- lapply(df_list, clean_for_consolidate)
+
+    df_list$confirmed <- cbind(type = "Confirmed", within(df_list$confirmed, rm("Lat", "Long")))
+    df_list$death <- cbind(type = "Death", within(df_list$death, rm("Lat", "Long")))
+    df_list$cured <- cbind(type = "Cured", within(df_list$cured, rm("Lat", "Long")))
+
+    consolidate_result <- rbind(df_list$confirmed, df_list$death, df_list$cured)
+    return (consolidate_result)
+    }
+
+```

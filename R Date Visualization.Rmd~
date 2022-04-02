@@ -1,0 +1,148 @@
+---
+title: "R Data Visualization"
+author: "Peter Hou"
+date: "08/01/2022
+output:
+  pdf_document: 
+    fig_caption: yes
+    number_sections: yes
+    latex_engine: xelatex
+  html_document: default
+---
+
+# Data Manipulation: COVID-19 Report
+
+Import necessary library
+``` {r}
+library(readr)
+
+```
+
+Import necessary datasets
+
+``` {r}
+confirmedDF <- read.csv("time_series_covid19_confirmed_global.csv")
+deathDF <- read.csv("time_series_covid19_deaths_global.csv")
+curedDF <- read.csv("time_series_covid19_recovered_global.csv")
+```
+
+## Data Checking
+
+``` {r}
+head(confirmedDF[, 1:5], 2)
+```
+
+## Country Data Snapshot
+We want to write a function which consolidate info on confirmed, death, and recovered cases for a particular region.
+We use China as an example
+
+``` {r}
+country <- "China"
+
+confirmedDF_country <-
+    confirmedDF[which(confirmedDF$Country.Region==country),]
+deathDF_country <-
+    deathDF[which(deathDF$Country.Region==country),]
+curedDF_country <-
+    curedDF[which(curedDF$Country.Region==country),]
+```
+
+### aggregate() Function
+ `aggregate(data_columns_to_aggregate, by = group_column, FUN = function_to_use)`
+``` {r} 
+str(confirmedDF_country)
+
+confirmedDF_country$Country.Regin <- as.character(confimedDF_country$Country.Regin) ## Makes sure that the country region name is of character type for the following function to proceed.
+
+confirmedDF_country_agg <-
+       aggregate(confirmedDF_country[, 3], ## column 3-end are the statistics for COVID-19
+       list(country = confirmedDF_country$Country.Region), sum)
+
+confirmedDF_country_agg ## You now should see we have consolidate infor for a country's COVID cases on specific days instead of scatter through all the provinces and states in a country
+```
+
+We now put the above consolidation into a function
+
+``` {r}
+clean_for_consolidate <- function(DF_country) {
+    DF_country$Country.Region <- as.character(DF_country$Country.Region)  
+
+DF_country_agg <-
+       aggregate(DF_country[,3:ncol(DF_country)], ## column 3-end are the statistics for COVID-19 cases on specific days
+                 list(country = DF_country$Country.Region), sum)
+}
+
+clean_for_consolidate(confirmedDF_country)
+
+```
+
+Consolidation for any country
+
+``` {r}
+country_consolidate <- function(country) {
+confirmedDF_country <-
+    confirmedDF[which(confirmedDF$Country.Region==country),]
+deathDF_country <-
+    deathDF[which(deathDF$Country.Region==country),]
+curedDF_country <-
+    curedDF[which(curedDF$Country.Region==country),]
+
+df_list <- list (
+    confirm = confirmedDF_country,
+    death = deathDF_country,
+    cured = curedDF_country
+)
+
+agg_df_list <- lapply(df_list, clean_for_consolidate)
+
+agg_df_list$confirm <- cbind(Type = "Confirmed", within(agg_df_list$confirm, rm("Lat", "Long")))
+agg_df_list$death <- cbind(Type = "Death", within(agg_df_list$death, rm("Lat", "Long")))
+agg_df_list$cured <- cbind(Type = "Cured", within(agg_df_list$cured, rm("Lat", "Long")))
+
+consolidate_df <- rbind(agg_df_list$confirm,
+                        agg_df_list$death,
+                        agg_df_list$cured)
+
+return(consolidate_df)
+                     
+}   
+
+
+china_consolidate <- country_consolidate("China")
+china_consolidate
+```
+
+# Data Visualization in R Default
+
+## Plot Function
+
+`plot` function itself can be used to generate all coordinate based 2D graphs, including scatter plots, line charts, and function plots.
+
+General Syntax
+```
+plot(x, y,
+     type = ,
+     pch  = ,
+     col  = ,
+     main = , xlab = , ylab = , 
+     lty  = , lwd  = ,
+     xlim = c(left_bound, right_bound),
+     ylim = c(left_bound, right_bound))
+```
+
+- `x`: usually defined using a vector or `seq(from = , to = , by = )`
+- `y`: another vector, or function output of `x_coord`
+- `type`: dafault is scatter plot, "l" for line chart, "o" for line-point chart
+- `pch`: point shape, [different index](http://www.sthda.com/english/wiki/r-plot-pch-symbols-the-different-point-shapes-available-in-r)
+- `col`: colour!!! Not column!!!
+- `main`: title of the plot
+- `xlab,ylab`: x axis label and y axis label
+- `lty`: line type, default is solid
+- `lwd`: line width, how thick your line is
+
+``` {r}
+x_seq <- seq(from = -2, to = 2, by = 0.001)
+plot(x_seq, x_seq^2, type = "o", main = "Plot for f(x) = x^2",
+     xlab = "x", ylab = "f(x)", pch = 13, lty = 3, lwd = 4, col = "red")
+
+```

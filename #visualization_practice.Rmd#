@@ -1,0 +1,69 @@
+---
+title: "COVID-19 Report"
+author: "Peter Hou"
+date: "01/05/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+#  Part I: COVID-19 Date Visualization
+
+``` {r}
+confirmedDF <- read.csv("time_series_covid19_confirmed_global.csv")
+deathDF <- read.csv("time_series_covid19_deaths_global.csv")
+curedDF <- read.csv("time_series_covid19_recovered_global.csv")
+
+clean_for_consolidate <- function(DF_country) {
+    DF_country$Country.Region <- as.character(DF_country$Country.Region)
+
+    DF_country_agg <- aggregate(DF_country[, 3:ncol(DF_country)], list(country = DF_country$Country.Region), sum)
+}
+
+country_consolidate <- function(country) {
+    confirmedDF_country <- confirmedDF[which(confirmedDF$Country.Region == country), ]
+    deathDF_country <- deathDF[which(deathDF$Country.Region == country), ]
+    curedDF_country <- deathDF[which(deathDF$Country.Region == country), ]
+
+    df_list <- list(
+        confirmed = confirmedDF_country,
+        death = deathDF_country,
+        cured = curedDF_country
+    )
+
+    df_list <- lapply(df_list, clean_for_consolidate)
+
+    df_list$confirmed <- cbind(type = "Confirmed", within(df_list$confirmed, rm("Lat", "Long")))
+    df_list$death <- cbind(type = "Death", within(df_list$death, rm("Lat", "Long")))
+    df_list$cured <- cbind(type = "Cured", within(df_list$cured, rm("Lat", "Long")))
+
+    consolidate_result <- rbind(df_list$confirmed, df_list$death, df_list$cured)
+    return (consolidate_result)
+    }
+
+```
+
+Try to create a function that can be used to generate daily new confirmed, death, and cured cases line
+chart based on the input country. The function should have two arguments, country and scale. scale can
+either be normal and log. log means all your data should be log-based. The country argument should be
+a vector of countries to look at. The output should be the line charts of all the input countries in a single
+graph frame. (Please try to adjust par accordingly)
+
+``` {r}
+library(ggplot2)
+Daily_change <- function(vcountry, scale){
+    for (i in 1:length(vcountry)) {
+        ggplot(country_consolidate(vcountry[i]), aes(x = Date, y = Confirmed, color = Confirmed))
+        +geom_line()
+        }
+}
+
+c <- c('China')
+
+Daily_change(c, 'normal')
+
+
+
+
+
+```

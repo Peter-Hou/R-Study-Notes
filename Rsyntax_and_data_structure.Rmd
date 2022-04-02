@@ -1,0 +1,729 @@
+---
+title: "R Syntax And Data Structures"
+author: "Peter Hou"
+date: "29/04/2020"
+output:
+  pdf_document: 
+  fig_caption: yes
+  number_sections: yes
+  latex_engine: xelatex
+  html_document: default
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Basic Syntax
+
+## Assign values to variables and display
+
+```{r}
+x <- "Hello World"
+
+cat(x) ##Display variable
+
+print(x) ##Print variable value
+```
+
+``` {r}
+
+y = 5 ## We may also assign variable value with "="
+print(5)
+
+```
+There is no big difference between "=" and "<-" for variable assignment. Most style guide advocate to use "<-" for the variable assignment. Be consistent with the choice in the program.
+
+As for the technical difference between "=", and "<-", you may try the following code to gain an intuition
+``` {r}
+matrix(1,nrow=2)
+print(nrow)
+
+matrix(1, nrow<-2)
+print(nrow)
+```
+
+## Important Data Type
+
+- String/Character
+- Int
+- Double (or Float in other program)
+(note "Float and Int" are together called numeric)
+- Vector
+- Matrix
+- Data Frame
+- Factor
+- ...
+
+``` {r}
+
+y_1 <- "R is interesting" ## This is string
+y_2 <- 100 ## This is an integer
+y_3 <- 99.5 ## This is a float
+
+# Special note about the class of y_2 and y_3
+
+class(y_2)
+class(y_3)
+
+y_4 <- TRUE ## This is boolean, boolean needs to be all capital letters in R
+y_5 <- c(1,2,3,4) ## This is a vector
+y_6 <- matrix(y_5, nrow = 2, ncol = 2) ## This is a matrix
+y_7 <- data.frame(y_6) ## This is a data frame
+
+
+```
+
+**Outputs:**
+```{r echo = FALSE}
+print(y_1)
+print(y_2)
+print(y_3)
+print(y_4)
+
+print(y_5)
+print(y_6)
+print(y_7)
+```
+
+### Data Parsing
+
+- Single Value Parsing
+``` {r}
+n1 <- as.numeric("5.0") ## convert to double, there is no as.flot
+typeof(n1)
+n2 <- as.integer("5.0")
+typeof(n2)
+
+as.character(100)
+```
+
+- Vectorized Parsing
+`as.` function will return a `vector`
+
+``` {r}
+as.numeric(c("2.3", "34", "10.7"))
+as.integer(c("2.3", "34", "10.7")) ## note as.integer round down the value which 10.7 becomes 10
+as.character(c(2.3 34.0 10.7))
+n <- as.character(matrix(1:6, nrow=2)) ## it returns vector instead of a matrix
+```
+
+- Data Coercion in `R`
+``` {r}
+vec1 <- c(1, 2, 3, 4, 5)  ## a vector of all numeric data
+class(vec1) ## a vector of all numeric data
+vec1[1] <- "hello world" ## changes the first entry of the vector to a string/character
+class(vec1) ## a vector of all character data
+```
+**Data Coercion:** `R` does not want to produce `NA` value if it is not necessary. Thus, will implicitly coerce data in the following order.
+- logical < integer < numeric < complex < character < list
+
+## Calculations
+
+- Binary Operators
+
+``` {r}
+1+1 ##Addition
+1-3 ##Subtraction
+3*4 ##Multiplication
+3/4 ##Division
+2**3 ## Exponential (Type 1)
+2^3 ## Exponential (Type 2)
+10 %% 3 ## Integer Modulo
+```
+
+
+- Functional Operators
+
+``` {r}
+
+exp(3) #base e exponential
+log(exp(3)) #natural log or ln in math context
+```
+Additionally, there are `sin, cos, tan, abs`...
+
+For example the following code
+```{r}
+abs((exp(sin(cos(pi)))+2*(-1))/(5/4))
+```
+
+# Important Data Type: Deep Dive
+
+## Vector and Vectorized Operation
+
+### Vector Properties
+
+**vector can only store values of the same type**
+```{r}
+vec_1 <- c(2,3,4,5)
+print(vec_1)
+```
+
+Otherwise, *Data Coercion* will happen!
+```{r}
+vec_2 <- c(TRUE, "23", 132)
+print(vec_2)
+vec_3 <- c(TRUE, 12, FALSE)
+print(vec_3)
+```
+
+Vector cannot be nested, vector of vector will be converted to single vector by r automatically
+
+``` {r}
+vec_4 <- c(23, 10, c(23, 10))
+print(vec_4)
+```
+
+`R` is for statiscians since real people count from `1`!
+
+Vector Slicing
+
+```{r}
+dummy <- c("1", "2", "3", "4", "5", "6")
+dummy[3] ## Get the 3rd value from a vector
+dummy[2:5] ## Vector slicing, it includes the vector at entry index of 5. Programming language like Python doesn't
+dummy[(length(dummy) - 2): length(dummy)] ## last 3 values
+
+vec_1 <- c(2, 3, 4, 5)
+vec_1[c(1, 2)] ## vector can also be used for slicing and the entries in the vector are for indexes
+```
+
+Append a value to a vector
+
+``` {r}
+append(dummy, c("N", "B")) ## Append Method 1
+c(dummy, c("N", "B")) ## Append Method 2
+dummy # dummy doesn't changes
+
+Remove a value from a vector, but it does not change the original vector, it creates a new vector with the value.
+
+``` {r}
+dummy[-length(dummy)] ## Remove last value
+dummy
+dummy <- dummy[-length(dummy)] ## Need to reassign
+``` 
+
+Identify value index in a vector
+
+``` {r}
+dummy <- c(3,4,2,1,4,3,6,2,1,3,6)
+which(dummy %in% c(6,2) ##output every index that corresponds to value of 6 or 2
+which(dummy %in% c(6,2)[1]) ## output only indexes correspond to 6
+which(dummy %in% c(6,2)[2]) ## output only indexes correspond to 2
+match(c(6,2), dummy) #output the first encountered index for each value
+match(c(2,6), dummy)
+``` 
+
+Reverse a vector `rev`
+
+``` {r}
+dummy <- c(2, 3, 4, 5)
+rev(dummy)
+```
+
+Sort a vector
+```{r}
+sort(dummy) #default increasing
+sort(dummy, decreasing = TRUE)
+```
+
+### Vectorized Operations
+
+We can perform operations on vectors directly with ease!
+
+#### Vector Numerical Data Summaries
+
+``` {r}
+set.seed(2020) ## control randomness
+dummy <- sample(1:10, 10, replace = TRUE) ## 10 random sample from c(1:10) with replacement
+dummy
+
+min(dummy)
+median(dummy)
+max(dummy)
+fivenum(dummy) # Return the five number summary
+quantile(dummy, c(0, 0.25, 0.5, 0.75, 1))
+``` 
+The five number summary in r is for min, lower-hinge value, median, upper-hinge value, max.
+The lower-hinge value means the median for the lower half value - every value that is lower than the median including the median. 
+The upper-hinge value means similar to lower-hinge which is for the median of the upper half value.
+
+The calculation for quantile in r is 
+	p - probabily, n - number of element in the vector
+	y = p*(n-1) + 1, then a = floor(y), b = ceiling(y). Let c = min(|b-y|, |a-y|) d = max(|b-y|, |a-y|)
+	The resulting value =  vector[c] * (1-p) + vector[d] * p
+
+```{r}
+sum(dummy) ## Sum 
+mean(dummy) ## Average
+sd(dummy) ## Sample Standard Deviation
+var(dummy) ## Sample Variance
+
+round(var(dummy), digits = 3) ## Round to 3 decimals
+```
+
+$$
+\text{Sample Variance}=(\text{Sample SD})^2=\frac{\sum_{i=1}^N(y_i-\bar{y})^2}{N-1}
+$$
+#### Vector Operations
+
+```{r}
+x_vec <- c(1,2,3,4)
+y_vec <- c(4,3,2,1)
+```
+
+We can think of these two as two $4\times 1$ column vectors. Then,
+
+```{r}
+3*x_vec 
+3+x_vec
+```
+
+$$
+3\times
+\begin{bmatrix}
+1\\
+2\\
+3\\
+4
+\end{bmatrix}=\begin{bmatrix}
+3\\
+6\\
+9\\
+12
+\end{bmatrix},
+\hspace{2cm}
+\begin{bmatrix}
+3\\
+3\\
+3\\
+3
+\end{bmatrix}+
+\begin{bmatrix}
+1\\
+2\\
+3\\
+4
+\end{bmatrix}=\begin{bmatrix}
+4\\
+5\\
+6\\
+7
+\end{bmatrix}
+$$
+
+Element-wise addition and multiplication
+```{r}
+x_vec + y_vec
+x_vec * y_vec
+```
+
+$$
+\begin{bmatrix}
+1\\
+2\\
+3\\
+4
+\end{bmatrix}+
+\begin{bmatrix}
+4\\
+3\\
+2\\
+1
+\end{bmatrix}=\begin{bmatrix}
+5\\
+5\\
+5\\
+5
+\end{bmatrix},
+\hspace{2cm}
+\begin{bmatrix}
+1\\
+2\\
+3\\
+4
+\end{bmatrix}\odot
+\begin{bmatrix}
+4\\
+3\\
+2\\
+1
+\end{bmatrix}=\begin{bmatrix}
+4\\
+6\\
+6\\
+4
+\end{bmatrix}
+$$
+
+In combination, we can apply any mathematical logic element-wise to a vector efficiently!
+
+```{r}
+round(exp(x_vec + y_vec^2), digits = 1)
+```
+
+You really should think of a `R` vector like a `Python` list and a `R` list as a `Python` library (hash table).
+
+## List
+
+List can contain any data type without coercion
+
+```{r}
+dummy_list <- list("a", 123, TRUE, c(0,1))
+dummy_list
+```
+
+List can be labelled with a reference
+
+``` {r}
+dummy_list <- list(a = 1,
+                   b = "b",
+                   c = c(0, 1),
+                   d = list(4, TRUE))
+dummy_list
+
+```
+Retrieve value/subset from a list
+
+``` {r}
+dummy_list[1] ## This will return a subset list
+dummy_list[[1]] ## This will return the actual data
+dummy_list$a ## Retrieve using label
+dummy_list$d[[1]]
+```
+This last one can be quite confusing when you are reading a large program, so it is recommended to always label the value with clear names!
+
+``` {r}
+dummy_list <- list("Peter", "r")
+names(dummy_list) <- list("name", "progamming_language")
+str(dummy_list) #alternative way of viewing a list
+dummy_list
+```
+
+Append an element to a list (actually change it)
+
+```{r}
+dummy_list$Hobby <- c("Chess", "Math", "CS")
+dummy_list[["Career"]] <- "Actuary"
+str(dummy_list)
+```
+
+Remove/Override an element from a list
+```{r}
+dummy_list$name <- NULL
+dummy_list[["Career"]] <- "Freelancer"
+str(dummy_list)
+```
+
+Be very careful about list operations in `R` since mutation can happen. There is a great library that have more extended functionalities related to `R` list called `rlist`. You can look more into that [rlist](https://www.rdocumentation.org/packages/rlist/versions/0.4.6.1).
+
+## Matrix
+`R` matrices are like vectors and lists in higher dimensions
+
+``` {r}
+## Numerical Matrices
+
+x_matrix <- matrix(c(1:6), nrow=2)
+x_matrix
+
+y_matrix <- matrix(c(1:6), nrow = 3, byrow = TRUE)
+y_matrix
+```
+
+By careful with the different betweent byrow = TRUE or the default byrow = FALSE
+
+``` {r}
+## Matrix Tranpose
+t(y_matrix)
+t(y_matrix) - x_matrix ## Element-wise addition/subtraction
+
+```
+
+``` {r}
+num_matrix_x <- matrix(1:9, nrow = 3)
+num_matrix_x
+
+num_matrix_y <- matrix(rep(1,9), nrow =3)
+num_matrix_y
+```
+
+``` {r}
+diag(num_matrix_x) ## Diagonal entries
+diag(x_matrix)
+
+num_matrix_x * num_matrix_y ## Element-wise multiplication
+num_matrix_x %*% num_matrix_y
+```
+
+`R` matrix can also contain non-numerical values if you add in a list instead of a vector
+
+``` {r}
+dummy_matrix <- matrix(list(a = "1",
+                            b = "b",
+                            c = 2,
+                            d = TRUE), nrow = 2)
+
+dummy_matrix
+
+```
+
+To retrieve value from a matrix
+``` {r}
+dummy_matrix[1, 2] ## [row, col] notation gives a list
+
+dummy_matrix[1, 2][[1]]  ## This gives the actual value
+
+x_matrix[1, 2] # actual value directly obtained from a numerical matrix
+```
+
+## `R` Data Frame
+
+### Data Frame Properties
+
+``` {r}
+vec_a  <-  c(1, 2, 3, 4)
+vec_b <- c("A", "B", "C", "D")
+vec_c <- c(TRUE, FALSE, TRUE, FALSE)
+dummy_df <- data.frame(vec_a, vec_b, vec_c)
+str(dummy_df)
+
+```
+
+To get a part view of a large dataframe, we could use `head()` or `tail()`
+
+``` {r}
+
+head(dummy_df, 2) # first two rows
+
+tail(dummy_df, 2) # last two rows
+
+```
+
+
+Rename the columns and rows
+
+``` {r}
+
+colnames(dummy_df) <- c("Index", "Level", "Dog")
+str(dummy_df)
+```
+
+Retrieve data from a dataframe
+
+``` {r}
+dummy_df$Level
+dummy_df[2, 1]
+dummy_df
+```
+
+``` {r}
+
+dummy_df[c("Level", "Dog")] ## Subsetting by columns
+
+```
+
+To add new data into a data frame
+
+``` {r}
+Cat <- c(FALSE, TRUE, FALSE, TRUE)
+cbind(dummy_df, Cat) ## Add a new column (not changed)
+str(dummy_df)
+```
+
+``` {r}
+new_row <- list(Index = 5, Level = "E", Dog = FALSE)
+dummy_df <- rbind(dummy_df, new_row) ## row bind
+str(dummy_df)
+dummy_df
+
+```
+
+``` {r}
+dummy_df$Level <- as.factor(dummy_df$Level)
+str(dummy_df)
+```
+
+`as.factor` function is used to identify categorical variables which a variable can only be of certain kinds, and there's no clear comparison technique between the kinds. For instance, setting up 1, 2, 3, 4 to be factors meaning 4 is no longer necessary to be considered > 3, and 4, 3 are just symbols now, like employee number.
+
+
+
+## Basic Boolean Operations
+
+``` {r}
+
+! TRUE # Not operation
+
+1 & 0 # type 1 and operation, TRUE == 1, FALSE == 0
+
+TRUE && TRUE # type 2 and operation
+
+1 | 0 # type 1 or operation
+
+0 || 0 # type 2 or operation
+
+xor(c(0, 1, 1, 0), c(1, 1, 1, 1)) # elementwise order exclusive-or
+```
+Note xor outputs TRUE when the two argument differs and FALSE when the two arguments are the same, so `xor(1, 1)` gives FALSE and `xor(0, 0)` also gives FALSE 
+
+
+## Type checking
+
+```{r}
+is.character("Hello!") #Character type check
+is.numeric("34.4") #Numeric type check
+is.integer(4) #Integer check
+is.matrix(dummy_matrix) #Matrix check
+is.na(c(NA)) # Missing value check
+```
+
+## If statements
+
+General Syntax
+
+```
+if (cond1) {
+    ...
+} else if (cond2) {
+    ...
+} else {
+    ...
+} 
+```
+
+``` {r}
+lst_test <- list("R", 123, TRUE, NA)
+
+if (is.numeric(lst_test[[1]])){
+    print(lst_test[[1]])
+} else if (is.list(lst_test[2])) {
+    str(lst_test[2])
+} else {
+    print(lst_test[[3]])
+}
+```
+
+Short-hand `ifelse`
+
+``` {r}
+ifelse(is.na(lst_test[[4]]),
+       lst_test[[4]] <- 0,
+       lst_test[[4]])
+str(lst_test)
+```
+
+## Looping Structures
+
+Looping in R can be done by iterating through vector, list or matrix
+
+### For loop
+``` 
+for (val in iterable data type) {
+	...
+}
+```
+
+``` {r}
+# Accumulate a vector using val directly
+
+accu <- c()
+
+for (val in 11:15) {
+    accu <- c(accu, val)
+}
+
+accu
+```
+
+``` {r}
+# Perform task indirectly using index
+
+for (index in 1:length(accu)){
+    print(accu[index])
+}
+```
+
+``` {r}
+# Nested for look for matrix
+dummy_matrix
+
+for (row_index in 1:nrow(dummy_matrix)) {
+    for (col_index in 1:ncol(dummy_matrix)){
+        print(paste("[", as.character(row_index), ",", as.character(col_index), "]"
+                    , "is of type", typeof(dummy_matrix[row_index, col_index])))
+        }
+    }
+```
+
+### While Loop
+
+While loop is simply a procedure that will not stop until an exit condition is met
+
+General Syntax
+
+``` 
+while (condition) {
+	...
+}
+
+```
+
+
+``` {r}
+# e.g. half the initial point until it reaches a tolerance
+
+initial_point <- c(0, 1)
+
+while (initial_point[2] > 0.0001) {
+    initial_point <- c(initial_point[1] + 1, initial_point[2] / 2)
+    }
+
+initial_point[1]
+```
+
+## £Ò Functions
+
+General Syntax
+
+``` 
+func <- function(para_1, para_2, ..) {
+	...
+}
+```
+We can specify the return value using `return(result)`, otherwise, `R` will try to return the last line of your function.
+
+``` {r}
+# Mathematical Calculation
+
+euclid_norm <- function(xy_pos) {
+    sqrt(xy_pos[1]^2 + xy_pos[2]^2)
+}
+euclid_norm(c(3,4))
+```
+
+``` {r}
+# Graphing
+
+plot_over_zero_one <- function(func) {
+    x_domain <- seq(from = 0, to = 1, by = 0.01)
+    plot(x_domain, func(x_domain))
+}
+
+func <- function(x){x/(1+x)}
+plot_over_zero_one(func)
+
+
+```
+
+## Factory Function
+
+A factory function is a function factory that produces function variables.
+
+```{r}
+poly_degree_gen <- function(degree){
+    function(x){
+        x^degree
+    }
+}
+poly_degree_gen(3)(2) ## 2^3
